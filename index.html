@@ -291,7 +291,7 @@
 
   <div class="panel">
     <div class="label">KATEGORIEN-TABELLE</div>
-    <p class="hint" style="margin-bottom:10px;">DOTS-Schwelle und entsprechendes Gewicht bei deinem aktuellen Körpergewicht/Geschlecht, je Lift und fürs Total.</p>
+    <p class="hint" style="margin-bottom:10px;">DOTS-Schwelle und entsprechendes Gewicht bei deinem aktuellen Körpergewicht/Geschlecht, je Lift und fürs Total. "% der Stufe" zeigt, wie weit dein aktuell eingegebenes Gewicht die jeweilige Stufe ausfüllt (0 % = noch nicht erreicht, 100 % = Stufe komplett ausgeschöpft/übertroffen). Im Einzellift-Modus nur für den gewählten Lift verfügbar.</p>
     <div class="tablewrap" id="dotsCategoryTableWrap"></div>
   </div>
 
@@ -832,6 +832,29 @@ function classifyDots(score, gender, lift) {
   return bands[bands.length - 1].label;
 }
 
+// Liefert Kategorie + wie weit die aktuelle Stufe "ausgeschöpft" ist (in %).
+// Bei der letzten Stufe (Elite, kein Deckel) wird stattdessen gezeigt, um wie viel % die
+// Einstiegsschwelle bereits überschritten ist.
+function classifyDotsDetailed(score, gender, lift) {
+  const bands = DOTS_TOTAL_BANDS[gender];
+  const scale = lift ? LIFT_SHARE[lift] : 1;
+  let lower = 0;
+  for (const band of bands) {
+    const upper = band.max === Infinity ? Infinity : band.max * scale;
+    if (score < upper) {
+      if (upper === Infinity) {
+        const pctOverEntry = lower > 0 ? (score / lower) * 100 : null;
+        return { label: band.label, pctText: pctOverEntry !== null ? pctOverEntry.toFixed(0) + '% der Einstiegsschwelle' : null };
+      }
+      const pct = Math.max(0, Math.min(100, ((score - lower) / (upper - lower)) * 100));
+      return { label: band.label, pctText: pct.toFixed(0) + '% der Stufe' };
+    }
+    lower = upper;
+  }
+  const last = bands[bands.length - 1];
+  return { label: last.label, pctText: null };
+}
+
 function renderDotsGenderRow() {
   const row = document.getElementById('dots-gender-row');
   row.innerHTML = '';
@@ -901,9 +924,11 @@ function renderDotsResult() {
   if (score === null || !isFinite(score)) {
     classOut.textContent = '—';
   } else if (dotsMode === 'single') {
-    classOut.textContent = classifyDots(score, dotsGender, dotsLift) + ' (' + LIFT_LABEL_DE[dotsLift] + ', geschätzt)';
+    const d = classifyDotsDetailed(score, dotsGender, dotsLift);
+    classOut.textContent = d.label + ' (' + LIFT_LABEL_DE[dotsLift] + ', geschätzt)' + (d.pctText ? ' — ' + d.pctText : '');
   } else {
-    classOut.textContent = classifyDots(score, dotsGender, null);
+    const d = classifyDotsDetailed(score, dotsGender, null);
+    classOut.textContent = d.label + (d.pctText ? ' — ' + d.pctText : '');
   }
 
   const breakdownWrap = document.getElementById('dotsBreakdownWrap');
@@ -917,20 +942,33 @@ function renderDotsResult() {
     ];
     rows.innerHTML = perLift.map(([key, label, w]) => {
       const s = computeDots(w, dotsBodyweight, dotsGender);
-      const cls = (s !== null && isFinite(s)) ? classifyDots(s, dotsGender, key) : '—';
       const sTxt = (s !== null && isFinite(s)) ? s.toFixed(1) : '—';
+      let clsTxt = '—';
+      if (s !== null && isFinite(s)) {
+        const d = classifyDotsDetailed(s, dotsGender, key);
+        clsTxt = d.label + (d.pctText ? ' — ' + d.pctText : '');
+      }
       return '<div class="dots-mini-row" style="border-top:none;padding-top:0;margin-top:4px;">'
-        + '<div><span class="dots-mini-label">' + label.toUpperCase() + '</span><span class="dots-mini-val" style="font-size:14px;">' + sTxt + ' — ' + cls + '</span></div>'
+        + '<div><span class="dots-mini-label">' + label.toUpperCase() + '</span><span class="dots-mini-val" style="font-size:14px;">' + sTxt + ' — ' + clsTxt + '</span></div>'
         + '</div>';
     }).join('');
   } else {
     breakdownWrap.style.display = 'none';
   }
 
-  renderDotsCategoryTable();
+  let currentWeights;
+  if (dotsMode === 'single') {
+    currentWeights = { squat: null, bench: null, deadlift: null, total: null };
+    currentWeights[dotsLift] = total;
+  } else {
+    currentWeights = { squat: sq, bench: bp, deadlift: dl, total: total };
+  }
+  renderDotsCategoryTable(currentWeights);
 }
 
-function renderDotsCategoryTable() {
+// current: { squat, bench, deadlift, total } in kg — jeweils null, wenn kein Wert vorliegt
+// (z. B. Einzellift-Modus für die drei nicht gewählten Lifte).
+function renderDotsCategoryTable(current) {
   const wrap = document.getElementById('dotsCategoryTableWrap');
   const bands = DOTS_TOTAL_BANDS[dotsGender];
   // Einstiegs-Schwellen: jeweils die obere Grenze der vorherigen Kategorie
@@ -944,13 +982,29 @@ function renderDotsCategoryTable() {
   let html = '<table class="datatable"><thead><tr><th>Kategorie</th>';
   cols.forEach(c => html += `<th>${c.label}</th>`);
   html += '</tr></thead><tbody>';
-  entries.forEach(entry => {
+  entries.forEach((entry, i) => {
     html += `<tr><td style="color:var(--text-muted);white-space:normal;">${entry.label}</td>`;
     cols.forEach(c => {
       const scale = c.key === 'total' ? 1 : LIFT_SHARE[c.key];
-      const dotsVal = entry.dots * scale;
-      const kgVal = dotsToWeight(dotsVal, dotsBodyweight, dotsGender);
-      html += `<td>${kgVal.toFixed(0)} kg<br><span style="font-weight:400;color:var(--text-faint);font-size:9px;">${dotsVal.toFixed(0)} DOTS</span></td>`;
+      const lowerDots = entry.dots * scale;
+      const upperDots = (i + 1 < entries.length) ? entries[i + 1].dots * scale : Infinity;
+      const lowerKg = dotsToWeight(lowerDots, dotsBodyweight, dotsGender);
+      const upperKg = upperDots === Infinity ? Infinity : dotsToWeight(upperDots, dotsBodyweight, dotsGender);
+
+      const curr = current ? current[c.key] : null;
+      let fillHtml = '';
+      if (curr !== null && curr !== undefined && isFinite(curr)) {
+        let pct;
+        if (upperKg === Infinity) {
+          pct = curr >= lowerKg ? 100 : 0;
+        } else {
+          pct = Math.max(0, Math.min(100, ((curr - lowerKg) / (upperKg - lowerKg)) * 100));
+        }
+        const pctColor = pct >= 100 ? 'var(--tier-a)' : (pct > 0 ? 'var(--accent)' : 'var(--text-faint)');
+        fillHtml = `<br><span style="font-weight:600;color:${pctColor};font-size:10px;">${pct.toFixed(0)}% der Stufe</span>`;
+      }
+
+      html += `<td>${lowerKg.toFixed(0)} kg<br><span style="font-weight:400;color:var(--text-faint);font-size:9px;">${lowerDots.toFixed(0)} DOTS</span>${fillHtml}</td>`;
     });
     html += '</tr>';
   });
