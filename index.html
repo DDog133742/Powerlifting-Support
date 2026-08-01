@@ -6,16 +6,16 @@
 <title>Lift-Toolkit</title>
 <style>
   :root {
-    --bg: #1B1C1E;
-    --bg-alt: #161719;
-    --panel: #232527;
-    --border: #35373A;
-    --border-lit: #4A4D52;
-    --text: #EDEAE3;
-    --text-muted: #94969B;
-    --text-faint: #5F6165;
-    --accent: #C1521F;
-    --accent-dim: #7A3819;
+    --bg: #121212;
+    --bg-alt: #0C0C0D;
+    --panel: #1D1B1B;
+    --border: #363030;
+    --border-lit: #4D4444;
+    --text: #F1EEE7;
+    --text-muted: #A7A19C;
+    --text-faint: #6B6461;
+    --accent: #B8231F;
+    --accent-dim: #591713;
     --tier-a: #5C9A6E;
     --tier-b: #C99A3E;
     --tier-c: #7C7E83;
@@ -46,7 +46,7 @@
     color: var(--text-muted); font-size: 13px; font-weight: 600;
     letter-spacing: 0.03em; cursor: pointer; text-transform: uppercase;
   }
-  .tabbtn.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+  .tabbtn.active { background: var(--accent); color: #FFFFFF; border-color: var(--accent); }
 
   .eyebrow { font-family: 'SFMono-Regular', monospace; font-size: 11px; letter-spacing: 0.14em; color: var(--accent); margin-bottom: 6px; }
   h1.pagetitle { font-size: 28px; margin: 0 0 8px; line-height: 1.15; }
@@ -62,7 +62,7 @@
     background: transparent; color: var(--text-muted);
     border: 1px solid var(--border); cursor: pointer;
   }
-  .segbtn.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+  .segbtn.active { background: var(--accent); color: #FFFFFF; border-color: var(--accent); }
 
   .card { background: var(--bg-alt); border: 1px solid var(--border); padding: 14px; margin-bottom: 10px; }
   .card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
@@ -182,11 +182,6 @@
       <span style="font-size:12.5px;color:var(--text-muted);">Geschätztes 1RM (e1RM)</span>
       <span class="e1rm-val" id="e1rmOut">— kg</span>
     </div>
-    <div class="dots-mini-row" id="dotsMiniRow">
-      <div><span class="dots-mini-label">DOTS (Referenzgewicht)</span><span class="dots-mini-val" id="dotsRefOut">—</span></div>
-      <div><span class="dots-mini-label">DOTS (e1RM)</span><span class="dots-mini-val" id="dotsE1rmOut">—</span></div>
-    </div>
-    <p class="hint" id="dotsMiniHint" style="margin-top:8px;margin-bottom:0;"></p>
   </div>
 
   <div class="panel">
@@ -290,6 +285,25 @@
   </div>
 
   <div class="panel">
+    <div class="label">VARIANTEN-UMRECHNUNG</div>
+    <p class="hint" style="margin-bottom:10px;">Gewicht einer Übungsvariation grob auf den Wettkampf-Mainlift umrechnen — z. B. Pause Squat bei ca. 90 % des Mainlift-Gewichts, siehe Ladefaktor im Varianten-Finder.</p>
+    <div class="field-row">
+      <div class="field">
+        <div class="label">Gewicht (Variation)</div>
+        <input class="input" type="number" id="convVariationWeight" value="" min="0" step="0.5" placeholder="kg" oninput="renderConvResult()" />
+      </div>
+      <div class="field">
+        <div class="label">Faktor (%)</div>
+        <input class="input" type="number" id="convFactor" value="" min="1" max="200" step="1" placeholder="%" oninput="renderConvResult()" />
+      </div>
+    </div>
+    <div class="e1rm-row">
+      <span style="font-size:12.5px;color:var(--text-muted);">≈ Gewicht Mainlift</span>
+      <span class="e1rm-val" id="convResultOut">— kg</span>
+    </div>
+  </div>
+
+  <div class="panel">
     <div class="label">KATEGORIEN-TABELLE</div>
     <p class="hint" style="margin-bottom:10px;">DOTS-Schwelle und entsprechendes Gewicht bei deinem aktuellen Körpergewicht/Geschlecht, je Lift und fürs Total. "% der Stufe" zeigt, wie weit dein aktuell eingegebenes Gewicht die jeweilige Stufe ausfüllt (0 % = noch nicht erreicht, 100 % = Stufe komplett ausgeschöpft/übertroffen). Im Einzellift-Modus nur für den gewählten Lift verfügbar.</p>
     <div class="tablewrap" id="dotsCategoryTableWrap"></div>
@@ -322,7 +336,7 @@ function showTab(name) {
 ============================================================ */
 const WEAKPOINTS = {
   "Squat": ["Aus dem Loch", "Übergang / Sticking Point", "Lockout", "Muskelgruppen-Betonung", "Rumpf-/Oberkörperstabilität", "Positionelle Stabilität"],
-  "Bench Press": ["Von der Brust", "Sticking Point (Mid-Range)", "Lockout", "Stabilität/Technik", "Muskelgruppen-Betonung"],
+  "Bench Press": ["Von der Brust", "Sticking Point (Mid-Range)", "Lockout", "Stabilität/Technik", "Muskelgruppen-Betonung", "Hypertrophie (Zusatzvolumen)"],
   "Deadlift": ["Vom Boden", "Übergang (Schienbein-Knie)", "Lockout", "Griff-/Rückenrigidität", "Positionelle Technik"]
 };
 
@@ -370,6 +384,9 @@ const VARIATIONS = [
   { lift: "Bench Press", name: "Floor Press, eng", complexity: 2, weakpoints: ["Stabilität/Technik", "Muskelgruppen-Betonung"], changes: ["Beinposition/ROM", "Griffbreite"], mechanism: "Kein Leg Drive plus Trizeps-Betonung durch engen Griff.", tier: "C", loadPct: "80–90 %" },
   { lift: "Bench Press", name: "Paused Close Grip Board Press", complexity: 3, weakpoints: ["Muskelgruppen-Betonung", "Lockout", "Von der Brust"], changes: ["Griffbreite", "ROM-Verkürzung", "Pause"], mechanism: "Maximale Kumulation: Trizeps-Überlastung, Teil-ROM und erzwungener Neustart.", tier: "C", loadPct: "90–95 %" },
   { lift: "Bench Press", name: "Banded Pause Bench, eng", complexity: 3, weakpoints: ["Von der Brust", "Lockout"], changes: ["Griffbreite", "Pause", "Externer Widerstand"], mechanism: "Progressive Lockout-Überlastung kombiniert mit erzwungenem Neustart von der Brust.", tier: "A/C", loadPct: "75–85 % Stangenlast (+ Band)" },
+  { lift: "Bench Press", name: "Kurzhantel-Bankdrücken", complexity: 2, weakpoints: ["Hypertrophie (Zusatzvolumen)", "Muskelgruppen-Betonung"], changes: ["Implement (Kurzhanteln statt Langhantel)", "Unabhängige Armführung"], mechanism: "Größerer ROM ohne Brustkontakt-Begrenzung plus unabhängige Armführung erhöht Dehnungsreiz und beidseitige Stabilisationsarbeit; fehlende Bar-Path-Führung reduziert direkten Krafttransfer zum Wettkampf-Lift.", tier: "C", loadPct: "70–85 % (kombiniertes Kurzhantelgewicht, grobe Schätzung)" },
+  { lift: "Bench Press", name: "Machine Chest Press", complexity: 1, weakpoints: ["Hypertrophie (Zusatzvolumen)"], changes: ["Implement (Maschine, geführter Bewegungspfad)"], mechanism: "Geführter Bewegungspfad eliminiert Stabilisationsanforderung, ermöglicht isolierteres Pectoralis-Training bei geringeren ZNS-Kosten — Zusatzvolumen ohne Interferenz mit Bar-Path-Technik.", tier: "C", loadPct: "schwer vergleichbar (maschinen-/widerstandskurvenabhängig)" },
+  { lift: "Bench Press", name: "Machine Chest Press (Incline)", complexity: 2, weakpoints: ["Hypertrophie (Zusatzvolumen)", "Muskelgruppen-Betonung"], changes: ["Implement (Maschine)", "Bankwinkel (inklin)"], mechanism: "Inklinationswinkel verschiebt Betonung Richtung oberer Pectoralis/anteriorer Deltoideus, ergänzend zum flachen Wettkampf-Bankdrücken.", tier: "C", loadPct: "schwer vergleichbar (maschinen-/widerstandskurvenabhängig)" },
 
   { lift: "Deadlift", name: "Deficit Deadlift", complexity: 1, weakpoints: ["Vom Boden"], changes: ["Standhöhe (Defizit)"], mechanism: "Verlängerter ROM im untersten Abschnitt, höhere Anforderung an Startkraft.", tier: "C", loadPct: "85–90 %" },
   { lift: "Deadlift", name: "Block Pull / Rack Pull", complexity: 1, weakpoints: ["Lockout"], changes: ["ROM-Verkürzung (erhöhter Start)"], mechanism: "Supramaximale Teil-ROM-Last im oberen Bereich, weniger Ermüdung unten.", tier: "C", loadPct: "100–115 %" },
@@ -496,7 +513,7 @@ const TABLE = {
   12:{10:69.6,9.5:68.6,9:67.6,8.5:66.6,8:65.6,7.5:64.7,7:63.7,6.5:62.8,6:61.8}
 };
 const RPE_STEPS = [6,6.5,7,7.5,8,8.5,9,9.5,10];
-const LINE_PALETTE = ["#C1521F","#4F8F63","#C99A3E","#5B8FBF","#B05FA8","#9AA34C","#8B6BC9","#D9724F","#5FA8A0","#B87A3E","#7A8FC9","#A8734F"];
+const LINE_PALETTE = ["#B8231F","#4F8F63","#C99A3E","#5B8FBF","#B05FA8","#9AA34C","#8B6BC9","#D9724F","#5FA8A0","#B87A3E","#7A8FC9","#A8734F"];
 // Näherungsweise RIR-Entsprechung je RPE-Stufe (Helms et al. 2016, RIR-based RPE scale)
 const RIR_LABEL = {10:"0 RIR",9.5:"0–1 RIR",9:"1 RIR",8.5:"1–2 RIR",8:"2 RIR",7.5:"2–3 RIR",7:"3 RIR",6.5:"3–4 RIR",6:"4–5 RIR"};
 
@@ -628,7 +645,6 @@ function updateRpe() {
   renderChart(e1rm, repList);
   renderDataTable(e1rm);
   renderFullTable(e1rm);
-  renderDotsMini(refWeight, e1rm);
 }
 
 function renderChart(e1rm, repList) {
@@ -1012,19 +1028,31 @@ function renderDotsCategoryTable(current) {
   wrap.innerHTML = html;
 }
 
-// DOTS-Mini-Anzeige im RPE-Rechner (Referenzgewicht + e1RM)
-function renderDotsMini(refWeight, e1rm) {
-  const refScore = computeDots(refWeight, dotsBodyweight, dotsGender);
-  const e1rmScore = computeDots(e1rm, dotsBodyweight, dotsGender);
-  document.getElementById('dotsRefOut').textContent = (refScore !== null && isFinite(refScore)) ? refScore.toFixed(1) : '—';
-  document.getElementById('dotsE1rmOut').textContent = (e1rmScore !== null && isFinite(e1rmScore)) ? e1rmScore.toFixed(1) : '—';
-  document.getElementById('dotsMiniHint').textContent = 'Aktuell aus DOTS-Rechner: ' + (dotsGender === 'male' ? 'Mann' : 'Frau') + ', ' + dotsBodyweight + ' kg Körpergewicht (dort änderbar) — behandelt das Einzelgewicht wie ein Total; informell, keine offizielle DOTS-Nutzung.';
+function renderConvResult() {
+  const wRaw = document.getElementById('convVariationWeight').value;
+  const factorRaw = document.getElementById('convFactor').value;
+  const w = parseFloat(wRaw);
+  const factor = parseFloat(factorRaw);
+  const out = document.getElementById('convResultOut');
+
+  if (!wRaw || !factorRaw || !isFinite(w) || !isFinite(factor) || factor <= 0) {
+    out.textContent = '— kg';
+    return;
+  }
+
+  const mainlift = w / (factor / 100);
+  out.textContent = mainlift.toFixed(1) + ' kg';
+
+  // Errechnetes Mainlift-Gewicht ins Einzellift-Feld oben übernehmen und Folgeanzeigen aktualisieren
+  document.getElementById('dotsSingleWeight').value = mainlift.toFixed(1);
+  renderDotsResult();
 }
 
 renderDotsGenderRow();
 renderDotsLiftRow();
 renderDotsModeRow();
 renderDotsResult();
+renderConvResult();
 
 updateRpe();
 window.addEventListener('resize', updateRpe);
