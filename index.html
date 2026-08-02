@@ -185,6 +185,18 @@
   </div>
 
   <div class="panel">
+    <div class="label">PROZENT-RECHNER (BEZOGEN AUF E1RM)</div>
+    <div class="field">
+      <div class="label">Prozent (%)</div>
+      <input class="input" type="number" id="pctOfE1rm" value="" min="1" max="200" step="1" style="max-width:160px;" placeholder="%" oninput="renderPercentCalc()" />
+    </div>
+    <div class="e1rm-row">
+      <span style="font-size:12.5px;color:var(--text-muted);">Ergebnis</span>
+      <span class="e1rm-val" id="pctOfE1rmOut">— kg</span>
+    </div>
+  </div>
+
+  <div class="panel">
     <div class="label">TABELLE — FIXIERTER PARAMETER</div>
     <div class="seg-row" id="table-mode-row" style="margin-bottom:12px;"></div>
     <select class="input" id="tableRepsSelect" style="max-width:160px;margin-bottom:8px;" onchange="onTableRepsChange()"></select>
@@ -577,12 +589,13 @@ function renderTableModeRow() {
     b.textContent = label;
     b.onclick = () => {
       tableFixedMode = val;
-      document.getElementById('tableRepsSelect').style.display = val === 'reps' ? '' : 'none';
-      document.getElementById('tableRpeSelect').style.display = val === 'rpe' ? '' : 'none';
+      dotsStorageSet('state_tableFixedMode', val);
       updateRpe();
     };
     row.appendChild(b);
   });
+  document.getElementById('tableRepsSelect').style.display = tableFixedMode === 'reps' ? '' : 'none';
+  document.getElementById('tableRpeSelect').style.display = tableFixedMode === 'rpe' ? '' : 'none';
   document.getElementById('tableHint').textContent = tableFixedMode === 'reps'
     ? 'Voreinstellung: Referenz-Wdh. + 2. Sobald du hier manuell änderst, bleibt deine Auswahl bestehen, statt automatisch nachzuziehen.'
     : 'Voreinstellung: Referenz-RPE. Sobald du hier manuell änderst, bleibt deine Auswahl bestehen, statt automatisch nachzuziehen.';
@@ -596,7 +609,7 @@ function renderChartModeRow() {
     const b = document.createElement('div');
     b.className = 'segbtn' + (chartMode === val ? ' active' : '');
     b.textContent = label;
-    b.onclick = () => { chartMode = val; updateRpe(); };
+    b.onclick = () => { chartMode = val; dotsStorageSet('state_chartMode', val); updateRpe(); };
     row.appendChild(b);
   });
 }
@@ -626,13 +639,26 @@ function onRefRepsChange() {
 
 function clamp(v, lo, hi) { return Math.min(hi, Math.max(lo, v)); }
 
+let lastE1rm = 0;
+
+function renderPercentCalc() {
+  const pctRaw = document.getElementById('pctOfE1rm').value;
+  const out = document.getElementById('pctOfE1rmOut');
+  const pct = parseFloat(pctRaw);
+  if (!pctRaw || !isFinite(pct)) { out.textContent = '— kg'; return; }
+  const w = lastE1rm * (pct / 100);
+  out.textContent = (isFinite(w) ? w.toFixed(1) : '—') + ' kg';
+}
+
 function updateRpe() {
   const refWeight = parseFloat(document.getElementById('refWeight').value) || 0;
   const refReps = clamp(Math.round(parseFloat(document.getElementById('refReps').value) || 1), 1, 12);
   const refRPE = parseFloat(document.getElementById('refRPE').value);
   const pctRef = TABLE[refReps][refRPE];
   const e1rm = refWeight / (pctRef / 100);
+  lastE1rm = e1rm;
   document.getElementById('e1rmOut').textContent = (isFinite(e1rm) ? e1rm.toFixed(1) : '—') + ' kg';
+  renderPercentCalc();
 
   let minReps = clamp(Math.round(parseFloat(document.getElementById('minReps').value) || 1), 1, 12);
   let maxReps = clamp(Math.round(parseFloat(document.getElementById('maxReps').value) || 1), 1, 12);
@@ -645,6 +671,22 @@ function updateRpe() {
   renderChart(e1rm, repList);
   renderDataTable(e1rm);
   renderFullTable(e1rm);
+  persistRpeFields();
+}
+
+// Persistenz: zuletzt eingegebene Werte im RPE-Rechner speichern (nicht: Prozent-Rechner-Feld,
+// das soll laut Vorgabe immer leer starten)
+function persistRpeFields() {
+  ['refWeight', 'refReps', 'refRPE', 'minReps', 'maxReps'].forEach(id => {
+    dotsStorageSet('field_' + id, document.getElementById(id).value);
+  });
+  dotsStorageSet('state_tableReps', tableReps);
+  dotsStorageSet('state_tableRPE', tableRPE);
+  dotsStorageSet('state_tableFixedMode', tableFixedMode);
+  dotsStorageSet('state_chartMode', chartMode);
+  dotsStorageSet('state_rangeManuallyTouched', rangeManuallyTouched);
+  dotsStorageSet('state_tableRepsManuallyTouched', tableRepsManuallyTouched);
+  dotsStorageSet('state_tableRpeManuallyTouched', tableRpeManuallyTouched);
 }
 
 function renderChart(e1rm, repList) {
@@ -813,10 +855,11 @@ function dotsStorageGet(key, fallback) {
   }
 }
 function dotsStorageSet(key, value) {
+  const strVal = String(value);
   try {
-    localStorage.setItem('lifttoolkit_' + key, value);
+    localStorage.setItem('lifttoolkit_' + key, strVal);
   } catch (e) {
-    dotsMemoryFallback[key] = value;
+    dotsMemoryFallback[key] = strVal;
   }
 }
 
@@ -890,7 +933,7 @@ function renderDotsLiftRow() {
     const b = document.createElement('div');
     b.className = 'segbtn' + (dotsLift === val ? ' active' : '');
     b.textContent = label;
-    b.onclick = () => { dotsLift = val; renderDotsLiftRow(); renderDotsResult(); };
+    b.onclick = () => { dotsLift = val; dotsStorageSet('state_dotsLift', val); renderDotsLiftRow(); renderDotsResult(); };
     row.appendChild(b);
   });
 }
@@ -904,14 +947,15 @@ function renderDotsModeRow() {
     b.textContent = label;
     b.onclick = () => {
       dotsMode = val;
-      document.getElementById('dotsSingleInputs').style.display = val === 'single' ? '' : 'none';
-      document.getElementById('dotsTotalInputs').style.display = val === 'total' ? '' : 'none';
-      document.getElementById('dotsResultLabel').textContent = val === 'single' ? 'DOTS-Score (Einzellift)' : 'DOTS-Score (Total)';
+      dotsStorageSet('state_dotsMode', val);
       renderDotsModeRow();
       renderDotsResult();
     };
     row.appendChild(b);
   });
+  document.getElementById('dotsSingleInputs').style.display = dotsMode === 'single' ? '' : 'none';
+  document.getElementById('dotsTotalInputs').style.display = dotsMode === 'total' ? '' : 'none';
+  document.getElementById('dotsResultLabel').textContent = dotsMode === 'single' ? 'DOTS-Score (Einzellift)' : 'DOTS-Score (Total)';
 }
 
 function onDotsBodyweightChange() {
@@ -980,6 +1024,16 @@ function renderDotsResult() {
     currentWeights = { squat: sq, bench: bp, deadlift: dl, total: total };
   }
   renderDotsCategoryTable(currentWeights);
+  persistDotsFields();
+}
+
+// Persistenz: zuletzt eingegebene Werte im DOTS-Rechner speichern
+function persistDotsFields() {
+  ['dotsSingleWeight', 'dotsSquat', 'dotsBench', 'dotsDeadlift'].forEach(id => {
+    dotsStorageSet('field_' + id, document.getElementById(id).value);
+  });
+  dotsStorageSet('state_dotsMode', dotsMode);
+  dotsStorageSet('state_dotsLift', dotsLift);
 }
 
 // current: { squat, bench, deadlift, total } in kg — jeweils null, wenn kein Wert vorliegt
@@ -1047,6 +1101,29 @@ function renderConvResult() {
   document.getElementById('dotsSingleWeight').value = mainlift.toFixed(1);
   renderDotsResult();
 }
+
+/* ============================================================
+   PERSISTENZ: zuletzt eingegebene Werte wiederherstellen
+   (Prozent-Rechner sowie Varianten-Umrechnung sind bewusst ausgenommen —
+   die sollen laut Vorgabe bei jedem Öffnen leer starten)
+============================================================ */
+function restoreValue(id) {
+  const saved = dotsStorageGet('field_' + id, null);
+  if (saved !== null && saved !== '') document.getElementById(id).value = saved;
+}
+['refWeight', 'refReps', 'refRPE', 'minReps', 'maxReps', 'dotsSingleWeight', 'dotsSquat', 'dotsBench', 'dotsDeadlift'].forEach(restoreValue);
+
+const savedTableReps = dotsStorageGet('state_tableReps', null);
+if (savedTableReps !== null) { tableReps = Number(savedTableReps); tableRepsSelect.value = tableReps; }
+const savedTableRPE = dotsStorageGet('state_tableRPE', null);
+if (savedTableRPE !== null) { tableRPE = Number(savedTableRPE); tableRpeSelect.value = tableRPE; }
+tableFixedMode = dotsStorageGet('state_tableFixedMode', tableFixedMode);
+chartMode = dotsStorageGet('state_chartMode', chartMode);
+rangeManuallyTouched = dotsStorageGet('state_rangeManuallyTouched', 'false') === 'true';
+tableRepsManuallyTouched = dotsStorageGet('state_tableRepsManuallyTouched', 'false') === 'true';
+tableRpeManuallyTouched = dotsStorageGet('state_tableRpeManuallyTouched', 'false') === 'true';
+dotsMode = dotsStorageGet('state_dotsMode', dotsMode);
+dotsLift = dotsStorageGet('state_dotsLift', dotsLift);
 
 renderDotsGenderRow();
 renderDotsLiftRow();
