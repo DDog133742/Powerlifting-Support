@@ -684,9 +684,6 @@ function persistRpeFields() {
   dotsStorageSet('state_tableRPE', tableRPE);
   dotsStorageSet('state_tableFixedMode', tableFixedMode);
   dotsStorageSet('state_chartMode', chartMode);
-  dotsStorageSet('state_rangeManuallyTouched', rangeManuallyTouched);
-  dotsStorageSet('state_tableRepsManuallyTouched', tableRepsManuallyTouched);
-  dotsStorageSet('state_tableRpeManuallyTouched', tableRpeManuallyTouched);
 }
 
 function renderChart(e1rm, repList) {
@@ -1119,9 +1116,10 @@ const savedTableRPE = dotsStorageGet('state_tableRPE', null);
 if (savedTableRPE !== null) { tableRPE = Number(savedTableRPE); tableRpeSelect.value = tableRPE; }
 tableFixedMode = dotsStorageGet('state_tableFixedMode', tableFixedMode);
 chartMode = dotsStorageGet('state_chartMode', chartMode);
-rangeManuallyTouched = dotsStorageGet('state_rangeManuallyTouched', 'false') === 'true';
-tableRepsManuallyTouched = dotsStorageGet('state_tableRepsManuallyTouched', 'false') === 'true';
-tableRpeManuallyTouched = dotsStorageGet('state_tableRpeManuallyTouched', 'false') === 'true';
+// Die drei "manuell geändert"-Sperren (rangeManuallyTouched, tableRepsManuallyTouched,
+// tableRpeManuallyTouched) werden bewusst NICHT wiederhergestellt — sie sollen bei jedem
+// Öffnen der App zurückgesetzt sein, damit die Auto-Sync-Vorgaben (Referenz-Wdh. ± 2 usw.)
+// wieder greifen, bis innerhalb der aktuellen Sitzung manuell eingegriffen wird.
 dotsMode = dotsStorageGet('state_dotsMode', dotsMode);
 dotsLift = dotsStorageGet('state_dotsLift', dotsLift);
 
