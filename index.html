@@ -236,6 +236,7 @@
   <div class="note">
     <div class="label" style="margin-bottom:8px;color:var(--warn);">ZUR EVIDENZLAGE</div>
     <p>Die %1RM-Tabelle ist eine Schätzung: Nur 3 Zellen wurden je an erfahrenen Kniebeugern gemessen, der Rest ist interpoliert. Quelle: Zourdos et al. (2016), J Strength Cond Res 30(1):267–275.</p>
+    <p>RPE 5,0–5,5 liegen außerhalb der publizierten Tabelle (die deckt nur 6–10 ab) und sind von mir per Muster-Fortschreibung zusätzlich extrapoliert — hier ist die Unsicherheit nochmal höher als beim Rest der Tabelle.</p>
   </div>
 </div>
 
@@ -511,23 +512,23 @@ renderTierLegend();
    RPE CALCULATOR
 ============================================================ */
 const TABLE = {
-  1: {10:100,9.5:97.8,9:95.5,8.5:93.9,8:92.2,7.5:90.7,7:89.2,6.5:87.8,6:86.3},
-  2: {10:95.5,9.5:93.9,9:92.2,8.5:90.7,8:89.2,7.5:87.8,7:86.3,6.5:85,6:83.7},
-  3: {10:92.2,9.5:90.7,9:89.2,8.5:87.8,8:86.3,7.5:85,7:83.7,6.5:82.4,6:81.1},
-  4: {10:89.2,9.5:87.8,9:86.3,8.5:85,8:83.7,7.5:82.4,7:81.1,6.5:79.9,6:78.6},
-  5: {10:86.3,9.5:85,9:83.7,8.5:82.4,8:81.1,7.5:79.9,7:78.6,6.5:77.4,6:76.2},
-  6: {10:83.7,9.5:82.4,9:81.1,8.5:79.9,8:78.6,7.5:77.4,7:76.2,6.5:75.1,6:73.9},
-  7: {10:81.1,9.5:79.9,9:78.6,8.5:77.4,8:76.2,7.5:75.1,7:73.9,6.5:72.8,6:71.7},
-  8: {10:78.6,9.5:77.4,9:76.2,8.5:75.1,8:73.9,7.5:72.8,7:71.7,6.5:70.7,6:69.6},
-  9: {10:76.2,9.5:75.1,9:73.9,8.5:72.8,8:71.7,7.5:70.7,7:69.6,6.5:68.6,6:67.6},
-  10:{10:73.9,9.5:72.8,9:71.7,8.5:70.7,8:69.6,7.5:68.6,7:67.6,6.5:66.6,6:65.6},
-  11:{10:71.7,9.5:70.7,9:69.6,8.5:68.6,8:67.6,7.5:66.6,7:65.6,6.5:64.7,6:63.7},
-  12:{10:69.6,9.5:68.6,9:67.6,8.5:66.6,8:65.6,7.5:64.7,7:63.7,6.5:62.8,6:61.8}
+  1: {10:100,9.5:97.8,9:95.5,8.5:93.9,8:92.2,7.5:90.7,7:89.2,6.5:87.8,6:86.3,5.5:84.9,5:83.4},
+  2: {10:95.5,9.5:93.9,9:92.2,8.5:90.7,8:89.2,7.5:87.8,7:86.3,6.5:85,6:83.7,5.5:82.4,5:81.1},
+  3: {10:92.2,9.5:90.7,9:89.2,8.5:87.8,8:86.3,7.5:85,7:83.7,6.5:82.4,6:81.1,5.5:79.8,5:78.5},
+  4: {10:89.2,9.5:87.8,9:86.3,8.5:85,8:83.7,7.5:82.4,7:81.1,6.5:79.9,6:78.6,5.5:77.4,5:76.2},
+  5: {10:86.3,9.5:85,9:83.7,8.5:82.4,8:81.1,7.5:79.9,7:78.6,6.5:77.4,6:76.2,5.5:75.0,5:73.8},
+  6: {10:83.7,9.5:82.4,9:81.1,8.5:79.9,8:78.6,7.5:77.4,7:76.2,6.5:75.1,6:73.9,5.5:72.8,5:71.7},
+  7: {10:81.1,9.5:79.9,9:78.6,8.5:77.4,8:76.2,7.5:75.1,7:73.9,6.5:72.8,6:71.7,5.5:70.6,5:69.5},
+  8: {10:78.6,9.5:77.4,9:76.2,8.5:75.1,8:73.9,7.5:72.8,7:71.7,6.5:70.7,6:69.6,5.5:68.6,5:67.6},
+  9: {10:76.2,9.5:75.1,9:73.9,8.5:72.8,8:71.7,7.5:70.7,7:69.6,6.5:68.6,6:67.6,5.5:66.6,5:65.6},
+  10:{10:73.9,9.5:72.8,9:71.7,8.5:70.7,8:69.6,7.5:68.6,7:67.6,6.5:66.6,6:65.6,5.5:64.6,5:63.6},
+  11:{10:71.7,9.5:70.7,9:69.6,8.5:68.6,8:67.6,7.5:66.6,7:65.6,6.5:64.7,6:63.7,5.5:62.8,5:61.9},
+  12:{10:69.6,9.5:68.6,9:67.6,8.5:66.6,8:65.6,7.5:64.7,7:63.7,6.5:62.8,6:61.8,5.5:60.9,5:60.0}
 };
-const RPE_STEPS = [6,6.5,7,7.5,8,8.5,9,9.5,10];
+const RPE_STEPS = [5,5.5,6,6.5,7,7.5,8,8.5,9,9.5,10];
 const LINE_PALETTE = ["#B8231F","#4F8F63","#C99A3E","#5B8FBF","#B05FA8","#9AA34C","#8B6BC9","#D9724F","#5FA8A0","#B87A3E","#7A8FC9","#A8734F"];
 // Näherungsweise RIR-Entsprechung je RPE-Stufe (Helms et al. 2016, RIR-based RPE scale)
-const RIR_LABEL = {10:"0 RIR",9.5:"0–1 RIR",9:"1 RIR",8.5:"1–2 RIR",8:"2 RIR",7.5:"2–3 RIR",7:"3 RIR",6.5:"3–4 RIR",6:"4–5 RIR"};
+const RIR_LABEL = {10:"0 RIR",9.5:"0–1 RIR",9:"1 RIR",8.5:"1–2 RIR",8:"2 RIR",7.5:"2–3 RIR",7:"3 RIR",6.5:"3–4 RIR",6:"4–5 RIR",5.5:"5–6 RIR (extrapoliert)",5:"6+ RIR (extrapoliert)"};
 
 const rpeSelect = document.getElementById('refRPE');
 RPE_STEPS.forEach(r => {
@@ -545,7 +546,7 @@ for (let r = 1; r <= 12; r++) {
   refRepsSelect.appendChild(o);
 }
 
-let tableReps = 5; // fixierte Wiederholungszahl für die Tabelle (Default: Referenz-Wdh. + 2)
+let tableReps = 3; // fixierte Wiederholungszahl für die Tabelle (Default: entspricht Referenz-Wdh.)
 let tableRepsManuallyTouched = false; // sobald true, wird die Tabellen-Wdh. nicht mehr automatisch nachgezogen
 let tableRPE = 8; // fixierte RPE für die Tabelle, wenn Modus 'rpe' aktiv ist (Default: Referenz-RPE)
 let tableRpeManuallyTouched = false; // sobald true, wird die Tabellen-RPE nicht mehr automatisch nachgezogen
@@ -597,7 +598,7 @@ function renderTableModeRow() {
   document.getElementById('tableRepsSelect').style.display = tableFixedMode === 'reps' ? '' : 'none';
   document.getElementById('tableRpeSelect').style.display = tableFixedMode === 'rpe' ? '' : 'none';
   document.getElementById('tableHint').textContent = tableFixedMode === 'reps'
-    ? 'Voreinstellung: Referenz-Wdh. + 2. Sobald du hier manuell änderst, bleibt deine Auswahl bestehen, statt automatisch nachzuziehen.'
+    ? 'Voreinstellung: entspricht der Referenz-Wdh. Sobald du hier manuell änderst, bleibt deine Auswahl bestehen, statt automatisch nachzuziehen.'
     : 'Voreinstellung: Referenz-RPE. Sobald du hier manuell änderst, bleibt deine Auswahl bestehen, statt automatisch nachzuziehen.';
 }
 
@@ -619,7 +620,7 @@ function onRangeManualEdit() { rangeManuallyTouched = true; }
 function onRefRPEChange() {
   if (!tableRpeManuallyTouched) {
     tableRPE = Number(document.getElementById('refRPE').value);
-    tableRpeSelect.value = tableRPE;
+    syncSelectValue(tableRpeSelect, tableRPE);
   }
   updateRpe();
 }
@@ -631,13 +632,30 @@ function onRefRepsChange() {
     document.getElementById('maxReps').value = clamp(refReps + 2, 1, 12);
   }
   if (!tableRepsManuallyTouched) {
-    tableReps = clamp(refReps + 2, 1, 12);
-    tableRepsSelect.value = tableReps;
+    tableReps = refReps;
+    syncSelectValue(tableRepsSelect, tableReps);
   }
   updateRpe();
 }
 
 function clamp(v, lo, hi) { return Math.min(hi, Math.max(lo, v)); }
+
+// iOS Safari aktualisiert die Anzeige eines <select> manchmal nicht zuverlässig, wenn nur
+// .value programmatisch gesetzt wird (bekannter Rendering-Bug bei nativen Picker-Wheels).
+// Deshalb zusätzlich explizit das passende <option>-Element als "selected" markieren.
+function syncSelectValue(selectEl, val) {
+  selectEl.value = val;
+  for (const opt of selectEl.options) {
+    opt.selected = (String(opt.value) === String(val));
+  }
+}
+
+// Gewicht auf 2,5-kg-Schritte runden (gängige Plattennorm), exakten Wert dezent in Klammern
+// daneben zeigen. Wird in den RPE-Gewichtstabellen verwendet.
+function formatWeightCell(exactKg) {
+  const rounded = Math.round(exactKg / 2.5) * 2.5;
+  return rounded.toFixed(1) + '<br><span style="font-weight:400;color:var(--text-faint);font-size:9px;">(' + exactKg.toFixed(1) + ')</span>';
+}
 
 let lastE1rm = 0;
 
@@ -723,7 +741,7 @@ function renderChart(e1rm, repList) {
   const wMin = Math.max(0, Math.floor((min - pad) / 5) * 5);
   const wMax = Math.ceil((max + pad) / 5) * 5;
 
-  const xMinVal = xIsRpe ? 6 : Math.min(...xValues);
+  const xMinVal = xIsRpe ? 5 : Math.min(...xValues);
   const xMaxVal = xIsRpe ? 10 : Math.max(...xValues);
   const xSpan = (xMaxVal - xMinVal) || 1;
 
@@ -786,7 +804,7 @@ function renderDataTable(e1rm) {
     html += '</tr></thead><tbody>';
     [...RPE_STEPS].reverse().forEach(rpe => {
       html += `<tr><td style="color:var(--text-muted);white-space:normal;">RPE ${rpe.toFixed(1)}<br><span style="font-weight:400;color:var(--text-faint);font-size:9px;">${RIR_LABEL[rpe]}</span></td>`;
-      html += `<td>${Math.round(e1rm * TABLE[tableReps][rpe] / 100)}</td>`;
+      html += `<td>${formatWeightCell(e1rm * TABLE[tableReps][rpe] / 100)}</td>`;
       html += '</tr>';
     });
   } else {
@@ -794,7 +812,7 @@ function renderDataTable(e1rm) {
     html += '</tr></thead><tbody>';
     for (let r = 1; r <= 12; r++) {
       html += `<tr><td style="color:var(--text-muted);">${r}</td>`;
-      html += `<td>${Math.round(e1rm * TABLE[r][tableRPE] / 100)}</td>`;
+      html += `<td>${formatWeightCell(e1rm * TABLE[r][tableRPE] / 100)}</td>`;
       html += '</tr>';
     }
   }
@@ -811,7 +829,7 @@ function renderFullTable(e1rm) {
   html += '</tr></thead><tbody>';
   for (let r = 1; r <= 12; r++) {
     html += `<tr><td style="color:var(--text-muted);">${r}</td>`;
-    RPE_STEPS.forEach(rpe => html += `<td>${Math.round(e1rm * TABLE[r][rpe] / 100)}</td>`);
+    RPE_STEPS.forEach(rpe => html += `<td>${formatWeightCell(e1rm * TABLE[r][rpe] / 100)}</td>`);
     html += '</tr>';
   }
   html += '</tbody></table>';
@@ -1106,14 +1124,20 @@ function renderConvResult() {
 ============================================================ */
 function restoreValue(id) {
   const saved = dotsStorageGet('field_' + id, null);
-  if (saved !== null && saved !== '') document.getElementById(id).value = saved;
+  if (saved === null || saved === '') return;
+  const el = document.getElementById(id);
+  if (el.tagName === 'SELECT') {
+    syncSelectValue(el, saved);
+  } else {
+    el.value = saved;
+  }
 }
 ['refWeight', 'refReps', 'refRPE', 'minReps', 'maxReps', 'dotsSingleWeight', 'dotsSquat', 'dotsBench', 'dotsDeadlift'].forEach(restoreValue);
 
 const savedTableReps = dotsStorageGet('state_tableReps', null);
-if (savedTableReps !== null) { tableReps = Number(savedTableReps); tableRepsSelect.value = tableReps; }
+if (savedTableReps !== null) { tableReps = Number(savedTableReps); syncSelectValue(tableRepsSelect, tableReps); }
 const savedTableRPE = dotsStorageGet('state_tableRPE', null);
-if (savedTableRPE !== null) { tableRPE = Number(savedTableRPE); tableRpeSelect.value = tableRPE; }
+if (savedTableRPE !== null) { tableRPE = Number(savedTableRPE); syncSelectValue(tableRpeSelect, tableRPE); }
 tableFixedMode = dotsStorageGet('state_tableFixedMode', tableFixedMode);
 chartMode = dotsStorageGet('state_chartMode', chartMode);
 // Die drei "manuell geändert"-Sperren (rangeManuallyTouched, tableRepsManuallyTouched,
