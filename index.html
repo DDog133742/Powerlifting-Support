@@ -99,11 +99,6 @@
   .e1rm-val { font-family: 'Oswald', sans-serif; font-size: 24px; font-weight: 600; color: var(--accent); }
   .hint { font-size: 11px; color: var(--text-faint); margin-top: 8px; margin-bottom: 0; }
 
-  .chartbox { background: var(--bg-alt); border: 1px solid var(--border); padding: 16px 10px 10px; }
-  svg text { font-family: monospace; fill: var(--text-muted); font-size: 10px; }
-  .gridline { stroke: var(--border); stroke-dasharray: 2 3; }
-  .axisline { stroke: var(--text-faint); }
-
   .toggle-btn {
     margin-top: 12px; background: transparent; border: 1px solid var(--border); color: var(--text-muted);
     font-size: 12.5px; padding: 7px 12px; cursor: pointer;
@@ -116,10 +111,6 @@
   .note { margin-top: 26px; padding-top: 16px; border-top: 1px solid var(--border); }
   .note p { font-size: 12.5px; color: var(--text-muted); line-height: 1.55; }
   .note .src { font-size: 11.5px; color: var(--text-faint); }
-
-  .chart-legend { display: flex; flex-wrap: wrap; gap: 10px; padding: 10px 8px 0; font-size: 11.5px; color: var(--text-muted); }
-  .chart-legend-item { display: flex; align-items: center; gap: 5px; }
-  .chart-legend-swatch { width: 10px; height: 10px; display: inline-block; }
 </style>
 </head>
 <body>
@@ -202,34 +193,16 @@
     <select class="input" id="tableRepsSelect" style="max-width:160px;margin-bottom:8px;" onchange="onTableRepsChange()"></select>
     <select class="input" id="tableRpeSelect" style="max-width:160px;margin-bottom:8px;display:none;" onchange="onTableRpeChange()"></select>
     <p class="hint" id="tableHint" style="margin-bottom:12px;"></p>
+
+    <div class="label" style="margin-bottom:8px;">GEWICHTS-SCHRITTE (RUNDUNG)</div>
+    <div class="seg-row" id="rounding-step-row" style="margin-bottom:12px;"></div>
+
     <div class="tablewrap" id="dataTableWrap"></div>
   </div>
 
   <div class="panel">
-    <div class="label">REP-RANGE FÜR DIE GRAFIK</div>
-    <div class="field-row">
-      <div class="field">
-        <div class="label">von</div>
-        <input class="input" type="number" id="minReps" value="1" min="1" max="12" step="1" oninput="onRangeManualEdit(); updateRpe();" />
-      </div>
-      <div class="field">
-        <div class="label">bis</div>
-        <input class="input" type="number" id="maxReps" value="5" min="1" max="12" step="1" oninput="onRangeManualEdit(); updateRpe();" />
-      </div>
-    </div>
-    <p class="hint">Voreinstellung: Referenz-Wdh. ± 2. Sobald du hier manuell änderst, bleibt deine Auswahl bestehen, statt automatisch nachzuziehen.</p>
-  </div>
-
-  <div class="chartbox">
-    <div class="label" style="padding:0 8px;">ARBEITSGEWICHT — GRAFIK</div>
-    <div class="seg-row" id="chart-mode-row" style="padding:0 8px 10px;"></div>
-    <div id="chartContainer"></div>
-    <div class="chart-legend" id="chartLegend"></div>
-  </div>
-
-  <div class="panel">
     <div class="label">GESAMT-RPE-TABELLE</div>
-    <p class="hint" style="margin-bottom:10px;">Basierend auf deinem e1RM aus dem Referenzsatz oben — alle Wiederholungszahlen × alle RPE-Stufen auf einen Blick.</p>
+    <p class="hint" style="margin-bottom:10px;">Basierend auf deinem e1RM aus dem Referenzsatz oben — alle Wiederholungszahlen × alle RPE-Stufen mit Gewicht (gerundet, exakt in Klammern) und %1RM auf einen Blick.</p>
     <div class="tablewrap" id="fullTableWrap"></div>
   </div>
 
@@ -525,7 +498,6 @@ const TABLE = {
   12:{10:69,9.5:67,9:65,8.5:64,8:63,7.5:61,7:60,6.5:59,6:57,5.5:56,5:54}
 };
 const RPE_STEPS = [5,5.5,6,6.5,7,7.5,8,8.5,9,9.5,10];
-const LINE_PALETTE = ["#B8231F","#4F8F63","#C99A3E","#5B8FBF","#B05FA8","#9AA34C","#8B6BC9","#D9724F","#5FA8A0","#B87A3E","#7A8FC9","#A8734F"];
 // Näherungsweise RIR-Entsprechung je RPE-Stufe (Helms et al. 2016, RIR-based RPE scale)
 const RIR_LABEL = {10:"0 RIR",9.5:"0,5 RIR",9:"1 RIR",8.5:"1,5 RIR",8:"2 RIR",7.5:"2,5 RIR",7:"3 RIR",6.5:"3,5 RIR",6:"4 RIR",5.5:"4,5 RIR",5:"5 RIR"};
 
@@ -550,8 +522,6 @@ let tableRepsManuallyTouched = false; // sobald true, wird die Tabellen-Wdh. nic
 let tableRPE = 8; // fixierte RPE für die Tabelle, wenn Modus 'rpe' aktiv ist (Default: Referenz-RPE)
 let tableRpeManuallyTouched = false; // sobald true, wird die Tabellen-RPE nicht mehr automatisch nachgezogen
 let tableFixedMode = 'reps'; // 'reps' = Wdh. fixiert, Zeilen je RPE | 'rpe' = RPE fixiert, Zeilen je Wdh.
-let rangeManuallyTouched = false; // sobald true, wird die Rep-Range fürs Chart nicht mehr automatisch nachgezogen
-let chartMode = 'rpe'; // 'rpe' = X-Achse RPE, Linien je Wdh. | 'reps' = X-Achse Wdh., Linien je RPE
 
 const tableRepsSelect = document.getElementById('tableRepsSelect');
 for (let r = 1; r <= 12; r++) {
@@ -601,21 +571,6 @@ function renderTableModeRow() {
     : 'Voreinstellung: Referenz-RPE. Sobald du hier manuell änderst, bleibt deine Auswahl bestehen, statt automatisch nachzuziehen.';
 }
 
-function renderChartModeRow() {
-  const row = document.getElementById('chart-mode-row');
-  row.innerHTML = "";
-  const opts = [['rpe', 'X-Achse: RPE'], ['reps', 'X-Achse: Wiederholungen']];
-  opts.forEach(([val, label]) => {
-    const b = document.createElement('div');
-    b.className = 'segbtn' + (chartMode === val ? ' active' : '');
-    b.textContent = label;
-    b.onclick = () => { chartMode = val; dotsStorageSet('state_chartMode', val); updateRpe(); };
-    row.appendChild(b);
-  });
-}
-
-function onRangeManualEdit() { rangeManuallyTouched = true; }
-
 function onRefRPEChange() {
   if (!tableRpeManuallyTouched) {
     tableRPE = Number(document.getElementById('refRPE').value);
@@ -626,10 +581,6 @@ function onRefRPEChange() {
 
 function onRefRepsChange() {
   const refReps = clamp(Math.round(parseFloat(document.getElementById('refReps').value) || 1), 1, 12);
-  if (!rangeManuallyTouched) {
-    document.getElementById('minReps').value = clamp(refReps - 2, 1, 12);
-    document.getElementById('maxReps').value = clamp(refReps + 2, 1, 12);
-  }
   if (!tableRepsManuallyTouched) {
     tableReps = refReps;
     syncSelectValue(tableRepsSelect, tableReps);
@@ -651,9 +602,31 @@ function syncSelectValue(selectEl, val) {
 
 // Gewicht auf 2,5-kg-Schritte runden (gängige Plattennorm), exakten Wert dezent in Klammern
 // daneben zeigen. Wird in den RPE-Gewichtstabellen verwendet.
-function formatWeightCell(exactKg) {
-  const rounded = Math.round(exactKg / 2.5) * 2.5;
-  return rounded.toFixed(1) + '<br><span style="font-weight:400;color:var(--text-faint);font-size:9px;">(' + exactKg.toFixed(1) + ')</span>';
+let weightRoundingStep = 2.5; // 2.5 | 2 | 1 — einstellbar über GEWICHTS-SCHRITTE
+
+function formatWeightCell(exactKg, pct) {
+  const rounded = Math.round(exactKg / weightRoundingStep) * weightRoundingStep;
+  const decimals = weightRoundingStep === 1 ? 0 : 1;
+  return rounded.toFixed(decimals)
+    + '<br><span style="font-weight:400;color:var(--text-faint);font-size:9px;">(' + exactKg.toFixed(1) + ' kg)</span>'
+    + '<br><span style="font-weight:600;color:var(--accent);font-size:10px;">' + pct.toFixed(0) + '%</span>';
+}
+
+function renderRoundingStepRow() {
+  const row = document.getElementById('rounding-step-row');
+  row.innerHTML = '';
+  [[2.5, '2,5 kg'], [2, '2 kg'], [1, '1 kg']].forEach(([val, label]) => {
+    const b = document.createElement('div');
+    b.className = 'segbtn' + (weightRoundingStep === val ? ' active' : '');
+    b.textContent = label;
+    b.onclick = () => {
+      weightRoundingStep = val;
+      dotsStorageSet('state_weightRoundingStep', val);
+      renderRoundingStepRow();
+      updateRpe();
+    };
+    row.appendChild(b);
+  });
 }
 
 let lastE1rm = 0;
@@ -677,15 +650,8 @@ function updateRpe() {
   document.getElementById('e1rmOut').textContent = (isFinite(e1rm) ? e1rm.toFixed(1) : '—') + ' kg';
   renderPercentCalc();
 
-  let minReps = clamp(Math.round(parseFloat(document.getElementById('minReps').value) || 1), 1, 12);
-  let maxReps = clamp(Math.round(parseFloat(document.getElementById('maxReps').value) || 1), 1, 12);
-  const lo = Math.min(minReps, maxReps), hi = Math.max(minReps, maxReps);
-  const repList = [];
-  for (let r = lo; r <= hi; r++) repList.push(r);
-
+  renderRoundingStepRow();
   renderTableModeRow();
-  renderChartModeRow();
-  renderChart(e1rm, repList);
   renderDataTable(e1rm);
   renderFullTable(e1rm);
   persistRpeFields();
@@ -694,100 +660,13 @@ function updateRpe() {
 // Persistenz: zuletzt eingegebene Werte im RPE-Rechner speichern (nicht: Prozent-Rechner-Feld,
 // das soll laut Vorgabe immer leer starten)
 function persistRpeFields() {
-  ['refWeight', 'refReps', 'refRPE', 'minReps', 'maxReps'].forEach(id => {
+  ['refWeight', 'refReps', 'refRPE'].forEach(id => {
     dotsStorageSet('field_' + id, document.getElementById(id).value);
   });
   dotsStorageSet('state_tableReps', tableReps);
   dotsStorageSet('state_tableRPE', tableRPE);
   dotsStorageSet('state_tableFixedMode', tableFixedMode);
-  dotsStorageSet('state_chartMode', chartMode);
-}
-
-function renderChart(e1rm, repList) {
-  const container = document.getElementById('chartContainer');
-  const legendEl = document.getElementById('chartLegend');
-  const W = container.clientWidth > 0 ? container.clientWidth : 700;
-  const H = 320;
-  const padL = 46, padR = 14, padT = 12, padB = 34;
-  const plotW = W - padL - padR;
-  const plotH = H - padT - padB;
-
-  // Je nach Modus: Wer ist die X-Achse (feste Kategorien), wer sind die Linien (Serien)?
-  let xValues, seriesList, weightOf, xIsRpe, seriesLabel;
-  if (chartMode === 'rpe') {
-    xValues = RPE_STEPS;              // X-Achse: RPE 6.0–10.0
-    seriesList = repList;             // Linien: eine je Wiederholungszahl
-    weightOf = (series, x) => Math.round(e1rm * TABLE[series][x] / 100); // series=rep, x=rpe
-    xIsRpe = true;
-    seriesLabel = r => `${r} Wdh.`;
-  } else {
-    xValues = repList;                // X-Achse: Wiederholungszahl (aus Rep-Range)
-    seriesList = RPE_STEPS;           // Linien: eine je RPE-Stufe
-    weightOf = (series, x) => Math.round(e1rm * TABLE[x][series] / 100); // series=rpe, x=rep
-    xIsRpe = false;
-    seriesLabel = rpe => `RPE ${rpe.toFixed(1)}`;
-  }
-
-  // Gewicht-Bereich für die Y-Achse (nicht bei 0 startend, kleiner Puffer)
-  let min = Infinity, max = -Infinity;
-  seriesList.forEach(s => xValues.forEach(x => {
-    const v = weightOf(s, x);
-    if (v < min) min = v;
-    if (v > max) max = v;
-  }));
-  if (!isFinite(min) || !isFinite(max)) { min = 0; max = 100; }
-  const pad = Math.max(5, (max - min) * 0.12);
-  const wMin = Math.max(0, Math.floor((min - pad) / 5) * 5);
-  const wMax = Math.ceil((max + pad) / 5) * 5;
-
-  const xMinVal = xIsRpe ? 5 : Math.min(...xValues);
-  const xMaxVal = xIsRpe ? 10 : Math.max(...xValues);
-  const xSpan = (xMaxVal - xMinVal) || 1;
-
-  const xOf = x => padL + ((x - xMinVal) / xSpan) * plotW;
-  const yOf = w => padT + (1 - (w - wMin) / (wMax - wMin)) * plotH;
-
-  const yTicks = [];
-  const tickCount = 5;
-  for (let i = 0; i <= tickCount; i++) yTicks.push(Math.round(wMin + (i * (wMax - wMin)) / tickCount));
-
-  let svg = `<svg width="100%" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
-
-  // gridlines + y labels (Gewicht)
-  yTicks.forEach(t => {
-    const y = yOf(t);
-    svg += `<line class="gridline" x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" />`;
-    svg += `<text x="${padL-8}" y="${y+3}" text-anchor="end">${t}</text>`;
-  });
-  // x gridlines + labels (RPE oder Wdh.)
-  xValues.forEach(x => {
-    const xx = xOf(x);
-    svg += `<line class="gridline" x1="${xx}" y1="${padT}" x2="${xx}" y2="${H-padB}" />`;
-    const label = xIsRpe ? x.toFixed(1) : String(x);
-    svg += `<text x="${xx}" y="${H-padB+16}" text-anchor="middle">${label}</text>`;
-  });
-  // axes
-  svg += `<line class="axisline" x1="${padL}" y1="${padT}" x2="${padL}" y2="${H-padB}" />`;
-  svg += `<line class="axisline" x1="${padL}" y1="${H-padB}" x2="${W-padR}" y2="${H-padB}" />`;
-  svg += `<text x="${W/2}" y="${H-4}" text-anchor="middle">${xIsRpe ? 'RPE' : 'Wdh.'}</text>`;
-  svg += `<text x="${padL-8}" y="${padT-6}" text-anchor="end">kg</text>`;
-
-  // lines
-  seriesList.forEach((s, i) => {
-    const color = LINE_PALETTE[i % LINE_PALETTE.length];
-    const pts = xValues.map(x => `${xOf(x)},${yOf(weightOf(s, x))}`).join(' ');
-    svg += `<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2" />`;
-    xValues.forEach(x => {
-      svg += `<circle cx="${xOf(x)}" cy="${yOf(weightOf(s, x))}" r="2.5" fill="${color}" />`;
-    });
-  });
-
-  svg += `</svg>`;
-  container.innerHTML = svg;
-
-  legendEl.innerHTML = seriesList.map((s, i) =>
-    `<div class="chart-legend-item"><span class="chart-legend-swatch" style="background:${LINE_PALETTE[i % LINE_PALETTE.length]};"></span>${seriesLabel(s)}</div>`
-  ).join('');
+  dotsStorageSet('state_weightRoundingStep', weightRoundingStep);
 }
 
 function rpeHeaderCell(rpe) {
@@ -803,7 +682,7 @@ function renderDataTable(e1rm) {
     html += '</tr></thead><tbody>';
     [...RPE_STEPS].reverse().forEach(rpe => {
       html += `<tr><td style="color:var(--text-muted);white-space:normal;">RPE ${rpe.toFixed(1)}<br><span style="font-weight:400;color:var(--text-faint);font-size:9px;">${RIR_LABEL[rpe]}</span></td>`;
-      html += `<td>${formatWeightCell(e1rm * TABLE[tableReps][rpe] / 100)}</td>`;
+      html += `<td>${formatWeightCell(e1rm * TABLE[tableReps][rpe] / 100, TABLE[tableReps][rpe])}</td>`;
       html += '</tr>';
     });
   } else {
@@ -811,7 +690,7 @@ function renderDataTable(e1rm) {
     html += '</tr></thead><tbody>';
     for (let r = 1; r <= 12; r++) {
       html += `<tr><td style="color:var(--text-muted);">${r}</td>`;
-      html += `<td>${formatWeightCell(e1rm * TABLE[r][tableRPE] / 100)}</td>`;
+      html += `<td>${formatWeightCell(e1rm * TABLE[r][tableRPE] / 100, TABLE[r][tableRPE])}</td>`;
       html += '</tr>';
     }
   }
@@ -828,7 +707,7 @@ function renderFullTable(e1rm) {
   html += '</tr></thead><tbody>';
   for (let r = 1; r <= 12; r++) {
     html += `<tr><td style="color:var(--text-muted);">${r}</td>`;
-    RPE_STEPS.forEach(rpe => html += `<td>${formatWeightCell(e1rm * TABLE[r][rpe] / 100)}</td>`);
+    RPE_STEPS.forEach(rpe => html += `<td>${formatWeightCell(e1rm * TABLE[r][rpe] / 100, TABLE[r][rpe])}</td>`);
     html += '</tr>';
   }
   html += '</tbody></table>';
@@ -1131,14 +1010,15 @@ function restoreValue(id) {
     el.value = saved;
   }
 }
-['refWeight', 'refReps', 'refRPE', 'minReps', 'maxReps', 'dotsSingleWeight', 'dotsSquat', 'dotsBench', 'dotsDeadlift'].forEach(restoreValue);
+['refWeight', 'refReps', 'refRPE', 'dotsSingleWeight', 'dotsSquat', 'dotsBench', 'dotsDeadlift'].forEach(restoreValue);
 
 const savedTableReps = dotsStorageGet('state_tableReps', null);
 if (savedTableReps !== null) { tableReps = Number(savedTableReps); syncSelectValue(tableRepsSelect, tableReps); }
 const savedTableRPE = dotsStorageGet('state_tableRPE', null);
 if (savedTableRPE !== null) { tableRPE = Number(savedTableRPE); syncSelectValue(tableRpeSelect, tableRPE); }
 tableFixedMode = dotsStorageGet('state_tableFixedMode', tableFixedMode);
-chartMode = dotsStorageGet('state_chartMode', chartMode);
+const savedRoundingStep = dotsStorageGet('state_weightRoundingStep', null);
+if (savedRoundingStep !== null) weightRoundingStep = Number(savedRoundingStep);
 // Die drei "manuell geändert"-Sperren (rangeManuallyTouched, tableRepsManuallyTouched,
 // tableRpeManuallyTouched) werden bewusst NICHT wiederhergestellt — sie sollen bei jedem
 // Öffnen der App zurückgesetzt sein, damit die Auto-Sync-Vorgaben (Referenz-Wdh. ± 2 usw.)
